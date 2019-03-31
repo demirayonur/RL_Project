@@ -21,8 +21,7 @@ for d in demos_action:
 axs = plt.gca()
 plot_hmm(model.hmm, axs)
 
-t, x = generate_motion(model.hmm.means, 10)
-
+t, x = model.generate_motion()
 plt.plot(x[:,0], x[:,1])
 
 for _ in range(n_offspring):

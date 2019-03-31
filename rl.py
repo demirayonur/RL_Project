@@ -31,17 +31,21 @@ class HMMES(object):
         self.rollout_count -= 1
 
     def generate_rollout(self, std, duration=10.):
-        state_sequence = np.arange(0, self.hmm.n_state)# TODO: Replace with most likely state
+        state_sequence = self.hmm.keyframe_generation(self.hmm.n_state)
 
         for state in state_sequence:
             mu_exp = np.random.multivariate_normal(self.hmm.means[state], self.hmm.covars[state]*std)
             self.exp_means[state, self.rollout_count] = mu_exp
-        print self.exp_means[:,self.rollout_count,:]
+
         times, positions = generate_motion(self.exp_means[:,self.rollout_count,:], duration)
         self.std = std
         self.rollout_count += 1
 
         return times, positions
+
+    def generate_motion(self, duration=10.):
+        state_sequence = self.hmm.keyframe_generation(self.hmm.n_state)
+        return generate_motion(self.hmm.means[state_sequence,:], duration)
 
     def update(self, reward):
         if type(reward) == list or type(reward) == np.ndarray:

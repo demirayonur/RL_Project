@@ -9,3 +9,6 @@ n_dim_a = 7
 demos_action = sample_driver(n_sample, n_state_a, n_dim_a)
 
 hmm_model = HMM(demos_action, n_state_a)
+
+x  = hmm_model.keyframe_generation(5)
+
