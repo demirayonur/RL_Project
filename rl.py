@@ -65,7 +65,7 @@ class HMMES(object):
 
         pr = weights/np.sum(weights)
 
-        new_means = np.sum(self.exp_means*pr.reshape(-1,1,1), axis=0)
+        new_means = np.sum(self.exp_means*pr.reshape(1,-1,1), axis=1)
         self.hmm.update_means(new_means)
 
         self.reset_rollout()

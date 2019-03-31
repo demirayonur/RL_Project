@@ -52,7 +52,7 @@ def min_jerk(pos=None, dur=None, vel=None, acc=None, psg=None):
         if N > 2:
             psg = np.arange(dur/(N-1), dur-dur/(N-1)+1, dur/(N-1)).T
             func = lambda psg_: mjCOST(psg_, pos, vel, acc, t0)
-            psg = scipy.optimize.fmin(func = func, x0 = psg)
+            psg = scipy.optimize.fmin(func = func, x0 = psg, disp=False)
         else:
             psg = []
 
