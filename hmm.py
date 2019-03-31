@@ -1,6 +1,7 @@
 from hmmlearn import hmm
 import numpy as np
 import scipy
+import copy
 
 
 class HMM(object):
@@ -11,7 +12,7 @@ class HMM(object):
         Construction method
 
         :param demos: List of 2D numpy arrays.
-                      Each 2D numpy array is (n_keyframe_in_the_corresponding_demo, n_dim)
+                      Each 2D numpy array is (n_keyframe, n_dim)
                       for action model, n_dim = 7
                       for goal model, n_dim = 8
 
@@ -20,6 +21,7 @@ class HMM(object):
 
         self.demos = demos
         self.n_state = n_state
+        self.n_dims = self.demos[0].shape[-1]
 
         """
         In this project, to learn and evaluate the Hidden Markov Model
@@ -41,8 +43,22 @@ class HMM(object):
 
         self.prior_prob = self.model.startprob_
         self.transition_prob = self.model.transmat_
-        self.means = self.model.means_
-        self.covars = self.model.covars_
+
+    @property
+    def means(self):
+        return self.model.means_
+
+    @property
+    def covars(self):
+        return self.model.covars_
+
+    def update_means(self, means):
+        assert self.means.shape == means.shape
+        self.model.means_ = copy.deepcopy(means)
+
+    def update_covars(self, covars):
+        assert self.covars.shape == covars.shape
+        self.model.covars_ = copy.deepcopy(covars)
 
     def covariance_matrix_check(self, our_tol=1e-8):
 
@@ -110,4 +126,3 @@ class HMM(object):
                         A3 += unit * (-mineig * k ** 2 + spacing)
                         k += 1
                     self.covars[ind] = A3
-

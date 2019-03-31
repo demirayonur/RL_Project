@@ -62,7 +62,7 @@ def mean_vector_generation(n_state, n_dim):
 
     means = []
     for i in range(n_state):
-        means.append(np.random.uniform(-10, +10, n_dim))
+        means.append(np.random.uniform(-1, +1, n_dim))
 
     return np.array(means)
 
@@ -79,11 +79,11 @@ def cov_matrix_generation(n_state, n_dim):
 
     covs = np.empty(shape=(n_state, n_dim, n_dim))
     for i in range(n_state):
-        covs[i, :] = sklearn.datasets.make_spd_matrix(n_dim)
+        covs[i, :] = sklearn.datasets.make_spd_matrix(n_dim)*0.01
 
     return covs
 
-class randHMM(object):
+class RandHMM(object):
 
     def __init__(self, n_state, ndim):
         """
@@ -144,10 +144,9 @@ def which_index(arr):
     return ind
 
 
-def sample_driver(n_sample, n_state_a, n_dim_a, n_state_g, n_dim_g):
+def sample_driver(n_sample, n_state_a, n_dim_a):
 
-    action_model = randHMM(n_state_a, n_dim_a)
-    goal_model = randHMM(n_state_g, n_dim_g)
+    action_model = RandHMM(n_state_a, n_dim_a)
 
     lens = []
 
@@ -156,4 +155,4 @@ def sample_driver(n_sample, n_state_a, n_dim_a, n_state_g, n_dim_g):
         lens.append(random.randint(4, 7))
         count += 1
 
-    return action_model.sample(n_sample, lens), goal_model.sample(n_sample, lens)
+    return action_model.sample(n_sample, lens)
