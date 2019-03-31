@@ -1,4 +1,6 @@
 from hmmlearn import hmm
+from utils import *
+from pulp import *
 import numpy as np
 import scipy
 
@@ -110,4 +112,78 @@ class HMM(object):
                         A3 += unit * (-mineig * k ** 2 + spacing)
                         k += 1
                     self.covars[ind] = A3
+
+    def keyframe_generation(self, num_keyframe):
+
+        f1 = - log_w_zero_mask_1D(self.prior_prob)
+        d1 = - log_w_zero_mask_2D(self.transition_prob)
+
+        opt_model = LpProblem('Keyframe Sequence Generation', LpMinimize)
+
+        # Parameters
+
+        f, d, P, T = {}, {}, {}, {}
+
+        for i in range(self.n_state):
+            f[(i)] = f1[i]
+            P[(i)] = self.prior_prob[i]
+            for j in range(self.n_state):
+                d[(i, j)] = d1[i,j]
+                T[(i, j)] = self.transition_prob[i, j]
+
+        # Decision Variables
+
+        x = LpVariable.dicts('X', [(i, k) for i in range(self.n_state) for k in range(num_keyframe)], 0, 1, LpBinary)
+        y = LpVariable.dicts('Y', [(i, j, k) for i in range(self.n_state) for j in range(self.n_state)
+                                   for k in range(num_keyframe-1)], 0, 1, LpBinary)
+
+        # Objective Functions
+
+        opt_model += lpSum(x[(i, 0)]*f[(i)] for i in range(self.n_state)) + \
+                     lpSum(y[(i,j,k)]*d[(i,j)] for i in range(self.n_state) for j in range(self.n_state)
+                                               for k in range(num_keyframe-1))
+
+        # Assignment Constraints
+
+        for i in range(self.n_state):
+
+            opt_model += lpSum(x[(i,k)] for k in range(num_keyframe)) <= 1
+
+        for k in range(num_keyframe):
+
+            opt_model += lpSum(x[(i, k)] for i in range(self.n_state)) == 1
+
+        # Zero Probability Constraints
+
+        for i in range(self.n_state):
+
+            if P[(i)] == 0:
+                opt_model += x[(i,0)] == 0
+
+            for j in range(self.n_state):
+
+                if T[(i,j)] == 0:
+                    opt_model += lpSum(y[i,j,k] for k in range(num_keyframe-1)) == 0
+
+        # Linearization Constraints
+
+        for i in range(self.n_state):
+            for j in range(self.n_state):
+                for k in range(num_keyframe-1):
+                    opt_model += y[(i,j,k)] <= x[(i,k)]
+                    opt_model += y[(i,j,k)] <= x[(j,k+1)]
+                    opt_model += y[(i,j,k)] >= x[(i,k)] + x[(j, k + 1)] -1
+
+        # Model Solve
+
+        opt_model.solve()
+
+        # Extracting Optimal Solution
+        seq = []
+        for k in range(num_keyframe):
+            for i in range(self.n_state):
+                if x[(i,k)].varValue == 1:
+                    seq.append(i)
+
+        return seq
 

@@ -14,6 +14,5 @@ demos_action, demos_goal = sample_driver(n_sample, n_state_a, n_dim_a, n_state_g
 
 hmm_model = HMM(demos_action, n_state_a)
 
-new_demo = sample_driver(1, n_state_a, n_dim_a, n_state_g, n_dim_g)[0][0]
+x  = hmm_model.keyframe_generation(5)
 
-print(log_pdf(new_demo, hmm_model.means, hmm_model.covars))
