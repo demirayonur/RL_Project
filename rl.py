@@ -2,12 +2,11 @@ from hmm import HMM
 import numpy as np
 from motion import generate_motion
 
-
-class HMMES(object):
+class BaseRL(object):
     def __init__(self, demos, n_state, n_offspring):
         '''
-        HMM Evolution Strategy. Creates an hmm inside. Explores and updates hmm parameters. Generates motion for an
-        episode. Uses an Evolution Strategy, PI^2-ES for each state separately.
+        Base RL class. Creates an hmm inside. Explores and updates hmm parameters. Generates motion for an
+        episode. Stores rollout (or episode) information
 
          :param demos: List of 2D numpy arrays.
                       Each 2D numpy array is (n_keyframe, n_dim)
@@ -23,6 +22,10 @@ class HMMES(object):
         self.reset_rollout()
 
     def reset_rollout(self):
+        '''
+        Resets all memory
+        :return: None
+        '''
         self.exp_means = np.zeros((self.hmm.n_state, self.n_offspring, self.hmm.n_dims))
         self.rewards = np.zeros((self.n_offspring))
         self.rollout_count = 0
@@ -31,6 +34,15 @@ class HMMES(object):
         self.rollout_count -= 1
 
     def generate_rollout(self, std, duration=10.):
+        '''
+        Generates a rollout. Gets the most likely state sequence and fits a fifth order spline between randomly sampled
+        points from each state. Note that keeps the generated rollout in memory. To remove last rollout call remove_rollout
+        to clear all memory, call reset_rollout
+
+        :param std: Sampling step size
+        :param duration: Total motion duration
+        :return:
+        '''
         state_sequence = self.hmm.keyframe_generation(self.hmm.n_state)
 
         for state in state_sequence:
@@ -44,8 +56,23 @@ class HMMES(object):
         return times, positions
 
     def generate_motion(self, duration=10.):
+        '''
+        Gets the most likely state sequence and fits a fifth order spline between state centers
+
+        :param duration: Total motion duration in seconds.
+        :return: duration, position tuple
+        '''
         state_sequence = self.hmm.keyframe_generation(self.hmm.n_state)
         return generate_motion(self.hmm.means[state_sequence,:], duration)
+
+    def update(self, reward):
+        raise NotImplementedError()
+
+
+class HMMES(BaseRL):
+    def __init__(self, demos, n_state, n_offspring, adapt_cov=False):
+        BaseRL.__init__(self, demos, n_state, n_offspring)
+        self.adapt_cov = adapt_cov
 
     def update(self, reward):
         if type(reward) == list or type(reward) == np.ndarray:
@@ -60,12 +87,52 @@ class HMMES(object):
         if costs_range == 0:
             weights = np.full(self.n_offspring, 1.0)
         else:
-            costs_norm = np.asarray([-self.n_offspring * (x - min(self.rewards)) / costs_range for x in self.rewards])
+            costs_norm = np.asarray([-10* (x - min(self.rewards)) / costs_range for x in self.rewards])
             weights = np.exp(costs_norm)
 
         pr = weights/np.sum(weights)
 
         new_means = np.sum(self.exp_means*pr.reshape(1,-1,1), axis=1)
-        self.hmm.update_means(new_means)
 
+        if self.adapt_cov:
+            diff = self.exp_means - self.hmm.means.reshape(-1,1,self.hmm.n_dims)
+            #3,15,2
+            new_cov = np.zeros_like(self.hmm.covars)
+            #3,2,2
+
+            for k in range(self.n_offspring):
+                d_k = diff[:,k,:]
+                #3,2
+                new_cov += pr[k]*np.matmul(d_k.T, d_k)
+            self.hmm.update_covars(new_cov*self.std)
+
+        self.hmm.update_means(new_means)
         self.reset_rollout()
+
+
+class HMMPower(BaseRL):
+    def __init__(self, demos, n_state, n_episodes, n_sample):
+        BaseRL.__init__(self, demos, n_state, n_episodes)
+        self.n_sample = n_sample
+
+    def update(self, reward):
+        if type(reward) == list or type(reward) == np.ndarray:
+            reward = np.sum(reward)
+
+        self.rewards[self.rollout_count-1] = reward
+
+        rewards = self.rewards[:self.rollout_count]
+        exp_means = self.exp_means[:,:self.rollout_count,:]
+
+        dW = exp_means - self.hmm.means.reshape(-1,1,self.hmm.n_dims)
+
+        if len(rewards) <= self.n_sample:
+            idx = list(range(len(rewards)))
+        else:
+            idx = np.argsort(rewards, axis=0)[::-1][0:self.n_sample]
+
+        # Power Update
+        pW = np.sum(dW[:,idx,:] * rewards[idx].reshape(1, -1, 1), axis=1) / np.sum(rewards[idx])
+        new_means = self.hmm.means + pW
+
+        self.hmm.update_means(new_means)

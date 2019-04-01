@@ -1,5 +1,5 @@
 from sampling import sample_driver
-from rl import HMMES
+from rl import HMMES, HMMPower
 import matplotlib.pyplot as plt
 from plot_utils import plot_hmm
 from motion import generate_motion
@@ -22,7 +22,7 @@ std_decay = 0.9
 
 demos_action = sample_driver(n_sample, n_state_a, n_dim_a)
 
-model = HMMES(demos_action, n_state_a, 15)
+model = HMMES(demos_action, n_state_a, n_offspring, adapt_cov=False)
 
 for d in demos_action:
     plt.scatter(d[:,0], d[:,1], color='black')
@@ -39,32 +39,61 @@ for _ in range(5):
 
 
 plt.legend()
-plt.show()
+plt.savefig('figures/initial.png', dpi=200, bbox_inches='tight')
 
 
 model.reset_rollout()
-rewards = []
+es_rewards = []
 std = std_init
 
+print "Training ES"
 for e in range(n_episode):
-    print e
     for r in range(n_offspring):
         t_r, x_r = model.generate_rollout(std, duration)
         rollout_reward = reward(t_r, x_r)
-        rewards.append(rollout_reward)
+        es_rewards.append(rollout_reward)
         model.update(rollout_reward)
     std = std*std_decay
-    print np.mean(rewards[-n_offspring])
 
-plt.plot(rewards)
-plt.show()
 
-f, axs = plt.subplots(2)
-t, x = model.generate_motion(duration)
-# TODO: Generete motion and generate rollout can pick different keyframe squences (is this because this is a dummy data??)
-axs[0].scatter(0.5, 0.5)
-axs[1].scatter(0.5, 0.2)
-for i in range(2):
-    axs[i].scatter(0.3, 0.5)
-    axs[i].plot(t, x[:,i])
-plt.show()
+es_cov_rewards = []
+std = std_init
+
+model = HMMES(demos_action, n_state_a, n_offspring, adapt_cov=True)
+
+print "Training ES CMA"
+for e in range(n_episode):
+    for r in range(n_offspring):
+        t_r, x_r = model.generate_rollout(std, duration)
+        rollout_reward = reward(t_r, x_r)
+        es_cov_rewards.append(rollout_reward)
+        model.update(rollout_reward)
+    std = std*std_decay
+model.hmm.save('.')
+# f, axs = plt.subplots(2)
+# t, x = model.generate_motion(duration)
+# axs[0].scatter(0.5, 0.5)
+# axs[1].scatter(0.5, 0.2)
+# for i in range(2):
+#     axs[i].scatter(0.3, 0.5)
+#     axs[i].plot(t, x[:,i])
+# plt.show()
+
+model = HMMPower(demos_action, n_state_a, n_episode*n_offspring, n_offspring)
+
+power_rewards = []
+std = std_init
+
+print "Training PoWER"
+for e in range(n_episode*n_offspring):
+    t_r, x_r = model.generate_rollout(std, duration)
+    rollout_reward = reward(t_r, x_r)
+    power_rewards.append(rollout_reward)
+    model.update(-rollout_reward)
+    std = std * std_decay
+
+plt.plot(power_rewards, label='PoWER')
+plt.plot(es_rewards, label='ES')
+plt.plot(es_cov_rewards, label='ES-Cov')
+plt.legend()
+plt.savefig('figures/rewards.png', dpi=200, bbox_inches='tight')

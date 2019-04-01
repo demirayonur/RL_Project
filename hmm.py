@@ -4,6 +4,7 @@ from pulp import *
 import numpy as np
 import scipy
 import copy
+import pickle
 
 
 class HMM(object):
@@ -45,6 +46,7 @@ class HMM(object):
 
         self.prior_prob = self.model.startprob_
         self.transition_prob = self.model.transmat_
+        self.covars_ = copy.deepcopy(self.model.covars_)
 
     @property
     def means(self):
@@ -52,7 +54,11 @@ class HMM(object):
 
     @property
     def covars(self):
-        return self.model.covars_
+        return self.covars_
+
+    def save(self, dir):
+        pickle.dump(self.model, open(os.path.join(dir, 'model.pk'), 'wb'))
+        np.save(os.path.join(dir, 'exp_cov'), self.covars_)
 
     def update_means(self, means):
         assert self.means.shape == means.shape
@@ -60,7 +66,7 @@ class HMM(object):
 
     def update_covars(self, covars):
         assert self.covars.shape == covars.shape
-        self.model.covars_ = copy.deepcopy(covars)
+        self.covars_ = copy.deepcopy(covars)
 
     def covariance_matrix_check(self, our_tol=1e-8):
 
