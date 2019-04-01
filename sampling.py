@@ -61,8 +61,19 @@ def mean_vector_generation(n_state, n_dim):
     """
 
     means = []
-    for i in range(n_state):
-        means.append(np.random.uniform(-1, +1, n_dim))
+    i = 0
+    while i < n_state:
+        rand_mean = np.random.uniform(-1, +1, n_dim)
+        if len(means) > 0:
+            norms = np.linalg.norm(np.array(means) - rand_mean.reshape(1,-1), axis=1)
+            if np.mean(norms) < 0.5:
+                continue
+            else:
+                means.append(rand_mean)
+        else:
+            means.append(rand_mean)
+
+        i += 1
 
     return np.array(means)
 
@@ -79,7 +90,7 @@ def cov_matrix_generation(n_state, n_dim):
 
     covs = np.empty(shape=(n_state, n_dim, n_dim))
     for i in range(n_state):
-        covs[i, :] = sklearn.datasets.make_spd_matrix(n_dim)*0.01
+        covs[i, :] = sklearn.datasets.make_spd_matrix(n_dim)*0.005
 
     return covs
 

@@ -6,8 +6,8 @@ from motion import generate_motion
 import numpy as np
 
 def reward(t, x):
-    via_point = np.array([0.5, 0.5])
-    idx = np.argmin(np.abs(t - 0.3))
+    via_point = np.array([0.5, 0.2])
+    idx = np.argmin(np.abs(t - 0.5))
     y = x[idx]
     return np.linalg.norm(via_point - y)
 
@@ -18,7 +18,7 @@ n_offspring = 15
 n_episode = 100
 duration = 1
 std_init = 1.
-std_decay = 0.85
+std_decay = 0.9
 
 demos_action = sample_driver(n_sample, n_state_a, n_dim_a)
 
@@ -33,11 +33,14 @@ plot_hmm(model.hmm, axs)
 t, x = model.generate_motion(duration)
 plt.plot(x[:,0], x[:,1])
 
-for _ in range(n_offspring):
+for _ in range(5):
     t_r, x_r = model.generate_rollout(1., duration)
     plt.plot(x_r[:,0], x_r[:,1], linestyle=':')
 
+
+plt.legend()
 plt.show()
+
 
 model.reset_rollout()
 rewards = []
@@ -59,6 +62,8 @@ plt.show()
 f, axs = plt.subplots(2)
 t, x = model.generate_motion(duration)
 # TODO: Generete motion and generate rollout can pick different keyframe squences (is this because this is a dummy data??)
+axs[0].scatter(0.5, 0.5)
+axs[1].scatter(0.5, 0.2)
 for i in range(2):
     axs[i].scatter(0.3, 0.5)
     axs[i].plot(t, x[:,i])

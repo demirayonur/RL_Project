@@ -37,7 +37,7 @@ class HMMES(object):
             mu_exp = np.random.multivariate_normal(self.hmm.means[state], self.hmm.covars[state]*std)
             self.exp_means[state, self.rollout_count] = mu_exp
 
-        times, positions = generate_motion(self.exp_means[:,self.rollout_count,:], duration)
+        times, positions = generate_motion(self.exp_means[state_sequence,self.rollout_count,:], duration)
         self.std = std
         self.rollout_count += 1
 

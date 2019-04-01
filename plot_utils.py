@@ -28,5 +28,5 @@ def plot_hmm(hmm, axis, coords=(0,1)):
         cov = hmm.covars[i]
         cov = np.array([[cov[c1,c1], cov[c1,c2]], [cov[c2,c1], cov[c2,c2]]])
 
-        axis.scatter(*pos, color='C{}'.format(i+1))
+        axis.scatter(*pos, color='C{}'.format(i+1), label=str(i+1))
         plot_ellipse(axis, pos, cov, 'C{}'.format(i+1))
