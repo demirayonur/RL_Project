@@ -16,8 +16,8 @@ std_decay = 0.9
 regular_decay = lambda x: x*std_decay
 identity_decay = lambda x: x
 
-models = [(HMMES, {}, 'es', regular_decay), (HMMES, {'adapt_cov': True}, 'es_cov', identity_decay),
-          (HMMPower, {'n_episode': n_episode}, 'power', regular_decay)]
+models = [(HMMPower, {'n_episode': n_episode}, 'power', regular_decay),
+          (HMMES, {}, 'es', regular_decay), (HMMES, {'adapt_cov': True}, 'es_cov', identity_decay)]
 
 demos_action = sample_driver(n_sample, n_state_a, n_dim_a)
 trainers = []

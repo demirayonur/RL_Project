@@ -35,7 +35,7 @@ class Trainer(object):
         self.via_point = np.array([0.5, 0.2])
         self.via_t = 0.5
 
-    def run(self, n_episode, n_rollout, std_init, decay_std):
+    def run(self, n_episode, n_rollout, std_init, decay_std, negative=False):
         print "Running {}".format(self.name)
         std = std_init
         for e in range(n_episode):
@@ -43,7 +43,7 @@ class Trainer(object):
                 t_r, x_r = self.model.generate_rollout(std, self.duration)
                 rollout_reward = self.reward(t_r, x_r)
                 self.rewards.append(rollout_reward)
-                self.model.update(rollout_reward)
+                self.model.update(-rollout_reward if negative else rollout_reward)
             std = decay_std(std)
             print e, np.mean(self.rewards[:-n_rollout+1])
         self.save_result()

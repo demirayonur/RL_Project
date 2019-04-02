@@ -133,10 +133,10 @@ class HMMPower(BaseRL):
         if len(rewards) <= self.n_offspring:
             idx = list(range(len(rewards)))
         else:
-            idx = np.argsort(rewards, axis=0)[::-1][0:self.n_offspring]
+            idx = np.argsort(rewards, axis=0)[0:self.n_offspring]
 
         # Power Update
         pW = np.sum(dW[:,idx,:] * rewards[idx].reshape(1, -1, 1), axis=1) / np.sum(rewards[idx])
-        new_means = self.hmm.means - pW
+        new_means = self.hmm.means + pW
 
         self.hmm.update_means(new_means)
