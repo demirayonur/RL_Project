@@ -1,6 +1,8 @@
 from hmm import HMM
 import numpy as np
 from motion import generate_motion
+import copy
+
 
 class BaseRL(object):
     def __init__(self, demos, n_state, n_offspring):
@@ -95,25 +97,27 @@ class HMMES(BaseRL):
         new_means = np.sum(self.exp_means*pr.reshape(1,-1,1), axis=1)
 
         if self.adapt_cov:
-            diff = self.exp_means - self.hmm.means.reshape(-1,1,self.hmm.n_dims)
-            #3,15,2
             new_cov = np.zeros_like(self.hmm.covars)
-            #3,2,2
 
-            for k in range(self.n_offspring):
-                d_k = diff[:,k,:]
-                #3,2
-                new_cov += pr[k]*np.matmul(d_k.T, d_k)
-            self.hmm.update_covars(new_cov*self.std)
+            for b in range(self.hmm.n_state):
+                cov_b = np.zeros_like(self.hmm.covars[b])
+                for k in range(self.n_offspring):
+                    diff = (self.exp_means[b, k, :] - self.hmm.means[b, :]).reshape(-1, 1)
+                    cov_b += pr[k] * np.matmul(diff, diff.T)
+
+                new_cov[b] = copy.deepcopy(cov_b)
+
+            self.hmm.update_covars(new_cov)
 
         self.hmm.update_means(new_means)
         self.reset_rollout()
 
 
 class HMMPower(BaseRL):
-    def __init__(self, demos, n_state, n_episodes, n_sample):
-        BaseRL.__init__(self, demos, n_state, n_episodes)
-        self.n_sample = n_sample
+    def __init__(self, demos, n_state, n_offspring, n_episode=None):
+        BaseRL.__init__(self, demos, n_state, n_offspring)
+        self.n_offspring = n_episode*n_offspring
+        self.reset_rollout()
 
     def update(self, reward):
         if type(reward) == list or type(reward) == np.ndarray:
@@ -126,13 +130,13 @@ class HMMPower(BaseRL):
 
         dW = exp_means - self.hmm.means.reshape(-1,1,self.hmm.n_dims)
 
-        if len(rewards) <= self.n_sample:
+        if len(rewards) <= self.n_offspring:
             idx = list(range(len(rewards)))
         else:
-            idx = np.argsort(rewards, axis=0)[::-1][0:self.n_sample]
+            idx = np.argsort(rewards, axis=0)[::-1][0:self.n_offspring]
 
         # Power Update
         pW = np.sum(dW[:,idx,:] * rewards[idx].reshape(1, -1, 1), axis=1) / np.sum(rewards[idx])
-        new_means = self.hmm.means + pW
+        new_means = self.hmm.means - pW
 
         self.hmm.update_means(new_means)
