@@ -32,5 +32,6 @@ for t in trainers:
     plt.plot(t.rewards, label=t.name)
 plt.xlabel('Rollout')
 plt.ylabel('Cost')
+plt.legend()
 plt.savefig('figures/costs.png', dpi=250, bbox_inches='tight')
 plt.clf()

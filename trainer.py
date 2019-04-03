@@ -8,6 +8,7 @@ class Trainer(object):
         self.model = model
         self.dpi = dpi
         self.duration = duration
+        self.via_point = np.array([0.5, 0.2])
 
         for d in demos_action:
             plt.scatter(d[:, 0], d[:, 1], color='black')
@@ -22,6 +23,8 @@ class Trainer(object):
             t_r, x_r = self.model.generate_rollout(1., duration)
             plt.plot(x_r[:, 0], x_r[:, 1], linestyle=':')
 
+        plt.scatter(self.via_point[0], self.via_point[1], label='w', marker='X')
+
         self.model.reset_rollout()
 
         plt.xlabel('x')
@@ -32,7 +35,7 @@ class Trainer(object):
         plt.clf()
 
         self.rewards = []
-        self.via_point = np.array([0.5, 0.2])
+
         self.via_t = 0.5
 
     def run(self, n_episode, n_rollout, std_init, decay_std, negative=False):
