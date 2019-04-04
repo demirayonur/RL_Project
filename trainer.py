@@ -62,6 +62,7 @@ class Trainer(object):
         axs = plt.gca()
         plot_hmm(self.model.hmm, axs)
         plt.plot(x[:, 0], x[:, 1])
+        plt.scatter(self.via_point[0], self.via_point[1], label='w', marker='X')
         plt.xlabel('x')
         plt.ylabel('y')
         plt.legend()
