@@ -16,12 +16,15 @@ class KFLFD(object):
 
         self.data_dir = data_dir
         self.n_offspring = n_offspring
+        self.perception_dim = perception_dim
 
         self.demo_dirs = ls_dir_idxs(data_dir)
         self.pca = PCA(n_components=perception_dim)
 
         self.perception_kf_data = []
         self.ee_kf_data = []
+
+        self.durations = []
 
         for ddir in self.demo_dirs:
             per_dir = os.path.join(ddir, 'perception.csv')
@@ -31,6 +34,8 @@ class KFLFD(object):
             keyframe_times = np.loadtxt(keyframe_dir, delimiter=',')
             perception_data = np.loadtxt(per_dir, delimiter=',')
             ee_data = np.loadtxt(ee_dir, delimiter=',')
+
+            self.durations.append(ee_data[-1]-ee_data[0])
 
             # -1 since first dimension is time
             perception_kf = np.zeros((len(keyframe_times), perception_data.shape[-1]-1))
@@ -72,3 +77,22 @@ class KFLFD(object):
 
         # Learn dense rewards
         self.s2d = Sparse2Dense(self.goal_model)
+
+        self.avg_dur = np.floor(np.mean(self.durations))
+        print "Average motion duration: ", self.avg_dur
+
+    def generate_rollout(self):
+        return self.action_model.generate_rollout(1.0, duration=self.avg_dur)
+
+    def remove_rollout(self):
+        self.action_model.remove_rollout()
+
+    def update(self, per_seq):
+        if per_seq.shape[-1] != self.perception_dim:
+            per_seq = self.pca.transform(per_seq)
+
+        ret = self.s2d.get_expected_return(per_seq)
+        self.action_model.update(ret)
+        is_success = self.goal_model.is_success(per_seq)
+
+        return is_success, ret
