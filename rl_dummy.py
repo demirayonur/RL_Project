@@ -1,6 +1,6 @@
-from sampling import sample_driver
-from rl import HMMES, HMMPower
-from trainer import Trainer
+from improve_klfd.sampling import sample_driver
+from improve_klfd.rl import HMMES, HMMPower
+from improve_klfd.trainer import Trainer
 import matplotlib.pyplot as plt
 
 
@@ -17,7 +17,7 @@ regular_decay = lambda x: x*std_decay
 identity_decay = lambda x: x
 
 models = [(HMMPower, {'n_episode': n_episode}, 'power', regular_decay),
-          (HMMES, {}, 'es', regular_decay), (HMMES, {'adapt_cov': True}, 'es_cov', identity_decay)]
+          (HMMES, {'adapt_cov': False}, 'es', regular_decay), (HMMES, {'adapt_cov': True}, 'es_cov', identity_decay)]
 
 demos_action = sample_driver(n_sample, n_state_a, n_dim_a)
 trainers = []

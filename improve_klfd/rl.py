@@ -72,7 +72,7 @@ class BaseRL(object):
 
 
 class HMMES(BaseRL):
-    def __init__(self, demos, n_state, n_offspring, adapt_cov=False):
+    def __init__(self, demos, n_state, n_offspring, adapt_cov=True):
         BaseRL.__init__(self, demos, n_state, n_offspring)
         self.adapt_cov = adapt_cov
 

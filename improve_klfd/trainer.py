@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from plot_utils import plot_hmm
+from improve_klfd.plot_utils import plot_hmm
 import numpy as np
 
 

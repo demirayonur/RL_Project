@@ -1,5 +1,5 @@
 from hmmlearn import hmm
-from utils import *
+from improve_klfd.utils import *
 from pulp import *
 import numpy as np
 import scipy
