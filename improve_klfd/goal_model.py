@@ -9,6 +9,9 @@ class HMMGoalModel(object):
         if per_lens is None:
             per_lens = list(map(len, per_data))
 
+        if len(per_data.shape) > 2:
+            per_data = per_data.reshape(-1, per_data.shape[-1])
+
         if n_states is None:
             components = [2, 4, 6, 8, 10]
 
@@ -34,6 +37,7 @@ class HMMGoalModel(object):
         self.final_states = np.array(self.hmm.predict(per_data, per_lens))[upper_idxs]
         print self.final_states
         self.T = int(np.mean(per_lens))
+        self.n_components = self.hmm.n_components
 
     def is_success(self, per_trj):
         per_trj = np.array(per_trj)

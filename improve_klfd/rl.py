@@ -49,6 +49,7 @@ class BaseRL(object):
 
         for state in state_sequence:
             mu_exp = np.random.multivariate_normal(self.hmm.means[state], self.hmm.covars[state]*std)
+            print mu_exp
             self.exp_means[state, self.rollout_count] = mu_exp
 
         times, positions = generate_motion(self.exp_means[state_sequence,self.rollout_count,:], duration)

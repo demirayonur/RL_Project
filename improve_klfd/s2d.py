@@ -18,10 +18,12 @@ class Sparse2Dense(object):
 
             self.v_table = np.mean(values_iter, axis=0)
             self.v_table = (self.v_table - self.v_table.min()) / (
-                        self.v_table.max() - self.v_table.min())  # Normalize values
+                        self.v_table.max() - self.v_table.min() + 1e-10)
 
             succ_idx = np.argmax(self.v_table)
             self.v_table[succ_idx] *= 10.
+
+        print self.v_table
 
     def learn(self, v, max_iter=1000):
         for _ in range(max_iter):

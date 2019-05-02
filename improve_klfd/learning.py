@@ -8,23 +8,40 @@ from improve_klfd.s2d import Sparse2Dense
 
 
 class KFLFD(object):
-    def __init__(self, data_dir, n_offspring, perception_dim=8):
-        '''
-        :param data_dir: Directory of the demonstrations. Each demo should have names 1,2,3 etc. and each demo folder
-        must contain keyframes.csv, perception.csv and ee_poses_wrt_obj.csv files.
-        '''
-
-        self.data_dir = data_dir
+    def __init__(self, n_offspring):
         self.n_offspring = n_offspring
-        self.perception_dim = perception_dim
-
-        self.demo_dirs = ls_dir_idxs(data_dir)
-        self.pca = PCA(n_components=perception_dim)
-
         self.perception_kf_data = []
         self.ee_kf_data = []
 
         self.durations = []
+
+    def learn_models(self):
+        self.n_kf = int(np.floor(np.mean(map(len, self.ee_kf_data))))
+        print "Avg. # of KF: ", self.n_kf
+
+        # Learn goal and action models
+        self.goal_model = HMMGoalModel(self.latent_perception_kf, n_states=self.n_kf)
+        self.action_model = HMMES(self.ee_kf_data, self.n_kf, self.n_offspring)
+        print self.action_model.hmm.means
+
+        # Learn dense rewards
+        self.s2d = Sparse2Dense(self.goal_model)
+
+        self.avg_dur = np.floor(np.mean(self.durations))
+        print "Average motion duration: ", self.avg_dur
+
+    def from_loaded_data(self, action_kfs, goal_kfs, pca):
+        self.pca = pca
+        self.perception_dim = pca.n_components
+        self.latent_perception_kf = goal_kfs[:, :, 1:]
+        self.ee_kf_data = action_kfs[:, :, 1:]
+        self.durations = action_kfs[:, -1, 0]
+        self.learn_models()
+
+    def load_from_dir(self, data_dir, perception_dim=8):
+        self.demo_dirs = ls_dir_idxs(data_dir)
+        self.pca = PCA(n_components=perception_dim)
+        self.perception_dim = perception_dim
 
         for ddir in self.demo_dirs:
             per_dir = os.path.join(ddir, 'perception.csv')
@@ -67,19 +84,7 @@ class KFLFD(object):
         print "PCA Explained variance:", np.sum(self.pca.explained_variance_ratio_)
 
         self.latent_perception_kf = list(map(self.pca.transform, self.perception_kf_data))
-
-        self.n_kf = np.floor(np.mean(map(len, self.ee_kf_data)))
-        print "Avg. # of KF: ", self.n_kf
-
-        # Learn goal and action models
-        self.goal_model = HMMGoalModel(self.latent_perception_kf)
-        self.action_model = HMMES(self.ee_kf_data, self.n_kf, self.n_offspring)
-
-        # Learn dense rewards
-        self.s2d = Sparse2Dense(self.goal_model)
-
-        self.avg_dur = np.floor(np.mean(self.durations))
-        print "Average motion duration: ", self.avg_dur
+        self.learn_models()
 
     def generate_rollout(self):
         return self.action_model.generate_rollout(1.0, duration=self.avg_dur)
