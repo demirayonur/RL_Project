@@ -8,8 +8,9 @@ from improve_klfd.s2d import Sparse2Dense
 
 
 class KFLFD(object):
-    def __init__(self, n_offspring):
+    def __init__(self, gamma, n_offspring):
         self.n_offspring = n_offspring
+        self.gamma = gamma
         self.perception_kf_data = []
         self.ee_kf_data = []
 
@@ -21,8 +22,7 @@ class KFLFD(object):
 
         # Learn goal and action models
         self.goal_model = HMMGoalModel(self.latent_perception_kf, n_states=self.n_kf)
-        self.action_model = HMMES(self.ee_kf_data, self.n_kf, self.n_offspring)
-        print self.action_model.hmm.means
+        self.action_model = HMMES(self.ee_kf_data, self.n_kf, self.n_offspring, self.gamma)
 
         # Learn dense rewards
         self.s2d = Sparse2Dense(self.goal_model)
@@ -87,7 +87,7 @@ class KFLFD(object):
         self.learn_models()
 
     def generate_rollout(self):
-        return self.action_model.generate_rollout(1.0, duration=self.avg_dur)
+            return self.action_model.generate_rollout(duration=self.avg_dur)
 
     def remove_rollout(self):
         self.action_model.remove_rollout()

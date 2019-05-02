@@ -5,7 +5,7 @@ import copy
 
 
 class BaseRL(object):
-    def __init__(self, demos, n_state, n_offspring):
+    def __init__(self, demos, n_state, gamma, n_offspring):
         '''
         Base RL class. Creates an hmm inside. Explores and updates hmm parameters. Generates motion for an
         episode. Stores rollout (or episode) information
@@ -16,9 +16,10 @@ class BaseRL(object):
                       for goal model, n_dim = 8
 
         :param n_state: Integer, number of possible hidden states.
+        :param gamma: Initial covariance matrix multiplier
         :param n_offspring: Number of offsprings (rollouts) in an episode
         '''
-        self.hmm = HMM(demos, n_state)
+        self.hmm = HMM(demos, n_state, gamma)
 
         self.n_offspring = n_offspring
         self.reset_rollout()
@@ -35,25 +36,22 @@ class BaseRL(object):
     def remove_rollout(self):
         self.rollout_count -= 1
 
-    def generate_rollout(self, std, duration=10.):
+    def generate_rollout(self, duration=10.):
         '''
         Generates a rollout. Gets the most likely state sequence and fits a fifth order spline between randomly sampled
         points from each state. Note that keeps the generated rollout in memory. To remove last rollout call remove_rollout
         to clear all memory, call reset_rollout
 
-        :param std: Sampling step size
         :param duration: Total motion duration
         :return:
         '''
         state_sequence = self.hmm.keyframe_generation(self.hmm.n_state)
 
         for state in state_sequence:
-            mu_exp = np.random.multivariate_normal(self.hmm.means[state], self.hmm.covars[state]*std)
-            print mu_exp
+            mu_exp = np.random.multivariate_normal(self.hmm.means[state], self.hmm.covars[state])
             self.exp_means[state, self.rollout_count] = mu_exp
 
         times, positions = generate_motion(self.exp_means[state_sequence,self.rollout_count,:], duration)
-        self.std = std
         self.rollout_count += 1
 
         return times, positions
@@ -73,8 +71,8 @@ class BaseRL(object):
 
 
 class HMMES(BaseRL):
-    def __init__(self, demos, n_state, n_offspring, adapt_cov=True):
-        BaseRL.__init__(self, demos, n_state, n_offspring)
+    def __init__(self, demos, n_state, n_offspring, gamma, adapt_cov=True):
+        BaseRL.__init__(self, demos, n_state, gamma, n_offspring)
         self.adapt_cov = adapt_cov
 
     def update(self, reward):

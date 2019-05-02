@@ -57,7 +57,8 @@ def aic(hmm, per_data, per_lens, mean=True):
         data = per_data[lower:lower + per_lens[i]]
         lower += per_lens[i]
         ll = hmm.score(data)
-        aic = np.log(len(data)) * n_params - 2*ll
+        # aic = np.log(len(data)) * n_params - 2*ll
+        aic = 2 * n_params - 2 * ll
         total_aic += aic
 
     return total_aic / len(per_lens) if mean else total_aic

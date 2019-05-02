@@ -5,11 +5,12 @@ import numpy as np
 import scipy
 import copy
 import pickle
+from motion import generate_motion
 
 
 class HMM(object):
 
-    def __init__(self, demos, n_state):
+    def __init__(self, demos, n_state, gamma):
 
         """
         Construction method
@@ -24,6 +25,7 @@ class HMM(object):
 
         self.demos = demos
         self.n_state = n_state
+        self.gamma = gamma
         self.n_dims = self.demos[0].shape[-1]
 
         """
@@ -37,8 +39,29 @@ class HMM(object):
         lengths = [demo.shape[0] for demo in self.demos]
         observations = np.concatenate([demo for demo in self.demos])
 
-        self.model = hmm.GaussianHMM(n_components=self.n_state)
-        self.model.fit(observations, lengths)
+        n_state = self.n_state
+
+        while True:
+            self.model = hmm.GaussianHMM(n_components=n_state)
+            self.model.fit(observations, lengths)
+
+            cov_norms = np.array([np.linalg.norm(c) for c in self.model.covars_])
+
+            if len(np.where(cov_norms >= 1)[0]) == 0:
+                try:
+                    _, _ = generate_motion(self.model.means_, 10)
+                    break
+                except Exception as e:
+                    n_state -= 1
+            else:
+                n_state -= 1
+
+            if n_state == 1:
+                raise Exception("Can't learn action model")
+
+        self.n_state = n_state
+        self.model.covars_ = np.array([np.diag(c) for c in self.model.covars_ * self.gamma])
+        print "Selected n state for action model", self.n_state
 
         """
         Statistical Parameters Learned by using Baum_Welch
