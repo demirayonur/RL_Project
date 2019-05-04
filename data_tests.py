@@ -9,7 +9,7 @@ action_kfs = np.load('/home/user/Desktop/action_kf.npy')
 goal_kfs = np.load('/home/user/Desktop/goal_kf.npy')
 pca = pickle.load(open('/home/user/Desktop/pca.pk', 'rb'))
 
-kf_lfd = KFLFD(0.1, 6, sparse=True)
+kf_lfd = KFLFD(0.5, 6, sparse=True)
 kf_lfd.from_loaded_data(action_kfs, goal_kfs, pca)
 
 test_per_d = pickle.load(open('/home/user/Desktop/sim_demo/1/pcae.pk', 'rb'))[1:]
@@ -23,7 +23,7 @@ for _ in range(6):
     plt.plot(x[:,1], x[:,2])
 
 
-#plot_hmm(kf_lfd.action_model.hmm, plt.gca())
+plot_hmm(kf_lfd.action_model.hmm, plt.gca(), (1,2))
 #plt.scatter(kf_lfd.terminal_kf[0], kf_lfd.terminal_kf[1], marker='X')
 
 #for i in range(1,4):
