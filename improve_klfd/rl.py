@@ -82,7 +82,7 @@ class HMMES(BaseRL):
         self.rewards[self.rollout_count-1] = reward
 
         if self.rollout_count < self.n_offspring:
-            return
+            return False
 
         costs_range = max(self.rewards) - min(self.rewards)
         if costs_range == 0:
@@ -110,6 +110,8 @@ class HMMES(BaseRL):
 
         self.hmm.update_means(new_means)
         self.reset_rollout()
+
+        return True
 
 
 class HMMPower(BaseRL):

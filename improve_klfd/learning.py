@@ -5,6 +5,7 @@ from sklearn.decomposition import PCA
 from improve_klfd.goal_model import HMMGoalModel
 from improve_klfd.rl import HMMES
 from improve_klfd.s2d import Sparse2Dense
+import pickle
 
 
 class KFLFD(object):
@@ -15,6 +16,7 @@ class KFLFD(object):
         self.ee_kf_data = []
 
         self.durations = []
+        self.success = []
 
     def learn_models(self):
         self.n_kf = int(np.floor(np.mean(map(len, self.ee_kf_data))))
@@ -97,7 +99,35 @@ class KFLFD(object):
             per_seq = self.pca.transform(per_seq)
 
         ret = self.s2d.get_expected_return(per_seq)
-        self.action_model.update(ret)
+        updated = self.action_model.update(ret)
         is_success = self.goal_model.is_success(per_seq)
+        self.success.append(is_success)
+
+        if updated:
+            self.success = []
 
         return is_success, ret
+
+    def save_models(self, dir):
+        action_model_dir = os.path.join(dir, 'action_model.pk')
+        goal_model_dir = os.path.join(dir, 'goal_model.pk')
+        s2d_dir = os.path.join(dir, 's2d.pk')
+        pca_dir = os.path.join(dir, 'pca.pk')
+
+        pickle.dump(self.action_model, open(action_model_dir, 'wb'))
+        pickle.dump(self.goal_model, open(goal_model_dir, 'wb'))
+        pickle.dump(self.s2d, open(s2d_dir, 'wb'))
+        pickle.dump(self.pca, open(pca_dir, 'wb'))
+
+    def save_log(self, dir, episode):
+        means_dir = os.path.join(dir, 'means_{}.csv'.format(episode))
+        exp_means_dir = os.path.join(dir, 'exp_means_{}'.format(episode))
+        covars_dir = os.path.join(dir, 'covars_{}.csv'.format(episode))
+        rewards_dir = os.path.join(dir, 'rewards_{}.csv'.format(episode))
+        success_dir = os.path.join(dir, 'success_{}'.format(episode))
+
+        np.savetxt(rewards_dir, self.action_model.rewards, delimiter=',')
+        np.save(exp_means_dir, self.action_model.exp_means)
+        np.savetxt(means_dir, self.action_model.hmm.means, delimiter=',')
+        np.save(covars_dir, self.action_model.hmm.covars)
+        np.savetxt(success_dir, self.success, delimiter=',')
