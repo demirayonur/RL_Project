@@ -91,6 +91,9 @@ class KFLFD(object):
     def generate_rollout(self):
             return self.action_model.generate_rollout(duration=self.avg_dur)
 
+    def generate_motion(self):
+        return self.action_model.generate_motion(duration=self.avg_dur)
+
     def remove_rollout(self):
         self.action_model.remove_rollout()
 
@@ -105,6 +108,12 @@ class KFLFD(object):
 
         if updated:
             self.success = []
+
+        return is_success, ret
+
+    def get_goal_info(self, per_seq):
+        ret = self.s2d.get_expected_return(per_seq)
+        is_success = self.goal_model.is_success(per_seq)
 
         return is_success, ret
 
