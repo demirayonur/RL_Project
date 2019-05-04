@@ -9,7 +9,7 @@ import pickle
 
 
 class KFLFD(object):
-    def __init__(self, gamma, n_offspring):
+    def __init__(self, gamma, n_offspring, sparse=False):
         self.n_offspring = n_offspring
         self.gamma = gamma
         self.perception_kf_data = []
@@ -17,6 +17,7 @@ class KFLFD(object):
 
         self.durations = []
         self.success = []
+        self.sparse = sparse
 
     def learn_models(self):
         self.n_kf = int(np.floor(np.mean(map(len, self.ee_kf_data))))
@@ -24,10 +25,11 @@ class KFLFD(object):
 
         # Learn goal and action models
         self.goal_model = HMMGoalModel(self.latent_perception_kf, n_states=self.n_kf)
-        self.action_model = HMMES(self.ee_kf_data, self.n_kf, self.n_offspring, self.gamma, self.terminal_kf)
+        self.action_model = HMMES(self.ee_kf_data, self.n_kf, self.n_offspring, self.gamma)
 
         # Learn dense rewards
-        self.s2d = Sparse2Dense(self.goal_model)
+        if not self.sparse:
+            self.s2d = Sparse2Dense(self.goal_model)
 
         self.avg_dur = np.floor(np.mean(self.durations))
         print "Average motion duration: ", self.avg_dur
@@ -37,7 +39,6 @@ class KFLFD(object):
         self.perception_dim = pca.n_components
         self.latent_perception_kf = goal_kfs[:, :, 1:]
         self.ee_kf_data = action_kfs[:, :-1, 1:]
-        self.terminal_kf = np.mean(action_kfs[:, -1, 1:], axis=0)
         self.durations = action_kfs[:, -1, 0]
         self.learn_models()
 

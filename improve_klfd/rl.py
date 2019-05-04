@@ -5,7 +5,7 @@ import copy
 
 
 class BaseRL(object):
-    def __init__(self, demos, n_state, gamma, n_offspring, terminal_kf):
+    def __init__(self, demos, n_state, gamma, n_offspring):
         '''
         Base RL class. Creates an hmm inside. Explores and updates hmm parameters. Generates motion for an
         episode. Stores rollout (or episode) information
@@ -22,7 +22,6 @@ class BaseRL(object):
         self.hmm = HMM(demos, n_state, gamma)
 
         self.n_offspring = n_offspring
-        self.terminal_kf = terminal_kf
         self.reset_rollout()
 
     def reset_rollout(self):
@@ -52,7 +51,7 @@ class BaseRL(object):
             mu_exp = np.random.multivariate_normal(self.hmm.means[state], self.hmm.covars[state])
             self.exp_means[state, self.rollout_count] = mu_exp
 
-        keyframes = np.concatenate([self.exp_means[state_sequence,self.rollout_count,:], self.terminal_kf.reshape(1, -1)], axis=0)
+        keyframes = self.exp_means[state_sequence,self.rollout_count,:]
         times, positions = generate_motion(keyframes, duration)
         self.rollout_count += 1
 
@@ -66,7 +65,7 @@ class BaseRL(object):
         :return: duration, position tuple
         '''
         state_sequence = self.hmm.keyframe_generation(self.hmm.n_state)
-        keyframes = np.concatenate([self.hmm.means[state_sequence, :], self.terminal_kf.reshape(1, -1)], axis=0)
+        keyframes = self.hmm.means[state_sequence, :]
         return generate_motion(keyframes, duration)
 
     def update(self, reward):
@@ -74,8 +73,8 @@ class BaseRL(object):
 
 
 class HMMES(BaseRL):
-    def __init__(self, demos, n_state, n_offspring, gamma, terminal_kf, adapt_cov=True):
-        BaseRL.__init__(self, demos, n_state, gamma, n_offspring, terminal_kf)
+    def __init__(self, demos, n_state, n_offspring, gamma, adapt_cov=True):
+        BaseRL.__init__(self, demos, n_state, gamma, n_offspring)
         self.adapt_cov = adapt_cov
 
     def update(self, reward):
