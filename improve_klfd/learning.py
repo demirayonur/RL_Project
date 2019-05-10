@@ -9,7 +9,7 @@ import pickle
 
 
 class KFLFD(object):
-    def __init__(self, gamma, n_offspring, sparse=False):
+    def __init__(self, gamma, n_state, n_offspring, sparse=False):
         self.n_offspring = n_offspring
         self.gamma = gamma
         self.perception_kf_data = []
@@ -18,14 +18,15 @@ class KFLFD(object):
         self.durations = []
         self.success = []
         self.sparse = sparse
+        self.n_state = n_state
 
     def learn_models(self):
         self.n_kf = int(np.floor(np.mean(map(len, self.ee_kf_data))))
         print "Avg. # of KF: ", self.n_kf
 
         # Learn goal and action models
-        self.goal_model = HMMGoalModel(self.latent_perception_kf, n_states=self.n_kf)
-        self.action_model = HMMES(self.ee_kf_data, self.n_kf, self.n_offspring, self.gamma)
+        self.goal_model = HMMGoalModel(self.latent_perception_kf)
+        self.action_model = HMMES(self.ee_kf_data, self.n_state, self.n_offspring, self.gamma)
 
         # Learn dense rewards
         if not self.sparse:
