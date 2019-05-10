@@ -39,7 +39,7 @@ class KFLFD(object):
         self.pca = pca
         self.perception_dim = pca.n_components
         self.latent_perception_kf = goal_kfs[:, :, 1:]
-        self.ee_kf_data = action_kfs[:, :-1, 1:]
+        self.ee_kf_data = action_kfs[:, :, 1:]
         self.durations = action_kfs[:, -1, 0]
         self.learn_models()
 
