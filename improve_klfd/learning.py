@@ -105,7 +105,7 @@ class KFLFD(object):
             per_seq = self.pca.transform(per_seq)
 
         ret = self.s2d.get_expected_return(per_seq)
-        updated = self.action_model.update(ret)
+        updated = self.action_model.update(-ret)
         is_success = self.goal_model.is_success(per_seq)
         self.success.append(is_success)
 

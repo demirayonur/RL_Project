@@ -90,7 +90,7 @@ class HMMES(BaseRL):
         if costs_range == 0:
             weights = np.full(self.n_offspring, 1.0)
         else:
-            costs_norm = np.asarray([-10* (x - min(self.rewards)) / costs_range for x in self.rewards])
+            costs_norm = np.asarray([-self.n_offspring * (x - min(self.rewards)) / costs_range for x in self.rewards])
             weights = np.exp(costs_norm)
 
         pr = weights/np.sum(weights)
