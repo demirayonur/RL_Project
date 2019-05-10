@@ -25,7 +25,7 @@ class KFLFD(object):
         print "Avg. # of KF: ", self.n_kf
 
         # Learn goal and action models
-        self.goal_model = HMMGoalModel(self.latent_perception_kf)
+        self.goal_model = HMMGoalModel(self.latent_perception_kf, n_states=self.n_state)
         self.action_model = HMMES(self.ee_kf_data, self.n_state, self.n_offspring, self.gamma)
 
         # Learn dense rewards
